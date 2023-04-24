@@ -35,9 +35,9 @@ CREATE TABLE IF NOT EXISTS "Б20-703-2".orders
     total_cost integer NOT NULL,
     order_date date NOT NULL,
     PRIMARY KEY (order_number),
-	constraint dl check (delivery_type = 'самовывоз' or delivery_type = 'доставка на дом'),
+    constraint dl check (delivery_type = 'самовывоз' or delivery_type = 'доставка на дом'),
     constraint pm check 
-	(payment_type = 'наличными' or payment_type = 'картой при доставке' or payment_type = 'картой онлайн')
+    (payment_type = 'наличными' or payment_type = 'картой при доставке' or payment_type = 'картой онлайн')
 );
 
 CREATE TABLE IF NOT EXISTS "Б20-703-2".clients
