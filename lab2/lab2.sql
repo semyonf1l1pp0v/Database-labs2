@@ -320,15 +320,14 @@ select * from "Б20-703-2".products_list;
 select sum(cost*count_storage) from "Б20-703-2".products as sum_cost;
 
 --1								
-/*приведение типов для дробного результата деления
-GOOD*/
+/*приведение типов для дробного результата деления*/
 
 select
 (select cast ((select count(*) from "Б20-703-2".orders) as float))/
 (select cast ((select count(*) from "Б20-703-2".clients) as float))
 as avg_orders;
 
---2 /*GOOD*/
+--2 
 (select orders_order_number, order_cost/cost as count_of_goods 
 from "Б20-703-2".products_list l, "Б20-703-2".products p 
 where l.products_product_code = p.product_code order by
@@ -341,26 +340,8 @@ from "Б20-703-2".products_list l, "Б20-703-2".products p
 where l.products_product_code = p.product_code order by
 count_of_goods desc limit 1);
 
-/*снизу старая версия (есть ли смысл использовать with и join???)*/
-
-/*with t1 as 
-(select orders_order_number, order_cost/cost as count_of_goods 
-from "Б20-703-2".products_list l, "Б20-703-2".products p 
-where l.products_product_code = p.product_code) 
-
-(select count_of_goods, orders_order_number from t1 
-join "Б20-703-2".orders k on k.order_number = t1.orders_order_number) order by
-count_of_goods asc limit 1)
-
-UNION
-
-(select count_of_goods, orders_order_number from t1 
-join "Б20-703-2".orders k on k.order_number = t1.orders_order_number order by
-count_of_goods desc limit 1);*/
-
 --3
-/*удаляем категорию, если она родитель и пуста (в ней нет товаров)
-МОЖНО ЛИ ЭТО СДЕЛАТЬ ПРОЩЕ?*/
+/*удаляем категорию, если она родитель и пуста (в ней нет товаров)*/
 delete from "Б20-703-2".product_categories d where 
 (d.pos_tree_id is NULL and (select count (*) from 
 (select * from "Б20-703-2".product_categories_products f
@@ -387,8 +368,7 @@ where f.product_categories_name = t1.name) as k) = 0) /*которые пуст�
 /* по одному выбираем товары со словом сарафан
 в названии, если в списке цветов нет желтого
 - добавляем, если есть - идем к следующему товару 
-ИЗМЕНЕНО: теперь функция возвращает добавляемые в таблицу строки
-GOOD(NOW)*/
+ИЗМЕНЕНО: теперь функция возвращает добавляемые в таблицу строки*/
 
 DROP FUNCTION IF EXISTS f1();
 CREATE OR REPLACE FUNCTION f1() RETURNS
@@ -429,7 +409,7 @@ delete from "Б20-703-2".product_colors_products l
 where l.products_product_code = '643224' and
 l.product_colors_color_name = 'желтый';
 
---5 /*GOOD*/
+--5 
 alter table "Б20-703-2".clients drop column
 if exists discount;
 
@@ -438,7 +418,7 @@ if not exists discount float default 0;
 
 select * from "Б20-703-2".clients;
 
---6 /*GOOD*/
+--6 
 alter table "Б20-703-2".clients
 drop constraint if exists discount_check;
 
@@ -447,7 +427,7 @@ discount_check check (discount <= 0.75);
 
 update "Б20-703-2".clients set discount = 0.7;
 
-update "Б20-703-2".clients set discount = 0.8;
+update "Б20-703-2".clients set discount = 0.8; 
 
 
 END;
