@@ -1,4 +1,3 @@
-
 BEGIN;
 
 drop table if exists "Б20-703-2".product_categories cascade;
@@ -13,11 +12,11 @@ drop table if exists "Б20-703-2".product_sizes_products cascade;
 drop table if exists "Б20-703-2".product_colors_products cascade;
 drop table if exists "Б20-703-2".product_categories_products cascade;
 
-drop sequence "Б20-703-2"."seq1";
-drop sequence "Б20-703-2"."seq2";
-drop sequence "Б20-703-2"."seq3";
-drop sequence "Б20-703-2"."seq4";
-drop sequence "Б20-703-2"."seq5";
+drop sequence "Б20-703-2"."seq1" cascade;
+drop sequence "Б20-703-2"."seq2" cascade;
+drop sequence "Б20-703-2"."seq3" cascade;
+drop sequence "Б20-703-2"."seq4" cascade;
+drop sequence "Б20-703-2"."seq5" cascade;
 
 CREATE TABLE IF NOT EXISTS "Б20-703-2".product_categories
 (
@@ -125,7 +124,7 @@ ALTER TABLE IF EXISTS "Б20-703-2".product_categories
     ADD FOREIGN KEY (pos_tree_id)
     REFERENCES "Б20-703-2".product_categories (id) MATCH SIMPLE 
     ON UPDATE NO ACTION
-    ON DELETE CASCADE
+    ON DELETE SET NULL
     NOT VALID;
 
 
@@ -327,7 +326,7 @@ select
 (select cast ((select count(*) from "Б20-703-2".clients) as float))
 as avg_orders;
 
---2 
+--2 TODO
 (select orders_order_number, order_cost/cost as count_of_goods 
 from "Б20-703-2".products_list l, "Б20-703-2".products p 
 where l.products_product_code = p.product_code order by
@@ -340,7 +339,7 @@ from "Б20-703-2".products_list l, "Б20-703-2".products p
 where l.products_product_code = p.product_code order by
 count_of_goods desc limit 1);
 
---3
+--3 TODO
 /*удаляем категорию, если она родитель и пуста (в ней нет товаров)*/
 delete from "Б20-703-2".product_categories d where 
 (d.pos_tree_id is NULL and (select count (*) from 
@@ -364,44 +363,14 @@ select * from t1 where
 (select count (*) from (select * from "Б20-703-2".product_categories_products f
 where f.product_categories_name = t1.name) as k) = 0) /*которые пусты*/ as bb))));
 
---4								
-/* по одному выбираем товары со словом сарафан
-в названии, если в списке цветов нет желтого
-- добавляем, если есть - идем к следующему товару 
-ИЗМЕНЕНО: теперь функция возвращает добавляемые в таблицу строки*/
-
-DROP FUNCTION IF EXISTS f1();
-CREATE OR REPLACE FUNCTION f1() RETURNS
-table(f1 text, f2 text) AS $$ 
-DECLARE i int := 0;
-
-BEGIN
-WHILE i < (select count (*) from "Б20-703-2".products l 
-			where l.name ~ '^Сарафан') LOOP
-
-	IF ('желтый' not in (select product_colors_color_name from
-	"Б20-703-2".product_colors_products k where k.products_product_code = 
+--4
+insert into "Б20-703-2".product_colors_products
+select color_name, product_code from "Б20-703-2".product_colors, "Б20-703-2".products l
+where id = 6 and l.name ~ '^Сарафан' AND
+'желтый' not in (select product_colors_color_name from
+	"Б20-703-2".product_colors_products k where k.products_product_code in 
 	(select product_code from "Б20-703-2".products l
-	 where l.name ~ '^Сарафан' limit 1 offset i))) THEN
-	 
-		insert into "Б20-703-2".product_colors_products values
-		('желтый',(select product_code from "Б20-703-2".products l
-	 	where l.name ~ '^Сарафан' limit 1 offset i));
-	ELSE 
-		continue;
-	END IF;
-	i := i + 1;
-END LOOP; 
-RETURN QUERY 
-(select * from	
-"Б20-703-2".product_colors_products k 
-where k.product_colors_color_name = 'желтый' 
-and k.products_product_code in 
-(select product_code from "Б20-703-2".products l where l.name ~ '^Сарафан'));
-END;
-$$ LANGUAGE plpgsql;
-
-select f1();
+	 where l.name ~ '^Сарафан'));
 
 select * from "Б20-703-2".product_colors_products;
 
@@ -427,7 +396,7 @@ discount_check check (discount <= 0.75);
 
 update "Б20-703-2".clients set discount = 0.7;
 
-update "Б20-703-2".clients set discount = 0.8; 
-
+update "Б20-703-2".clients set discount = 0.8;
 
 END;
+
