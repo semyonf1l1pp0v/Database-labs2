@@ -382,5 +382,41 @@ $$
 
 select f1('733454');
 
+--3
+DROP FUNCTION IF EXISTS cntprdcts(text, text);
+CREATE OR REPLACE FUNCTION cntprdcts(integer, integer[])
+    RETURNS integer AS
+$$
+    DECLARE
+        i int = 1;
+        l int = array_length($2,1);
+BEGIN
+WHILE (i <= l) LOOP
+    IF $2[i] IN (SELECT products_product_code::int from "Б20-703-2".products_list) THEN
+        IF $2 IS NULL THEN
+            RETURN $1;
+        ELSIF $1 IS NULL THEN
+            RETURN 1;
+        ELSE
+            RETURN $1+1;
+        END IF;
+    END IF;
+    i = i + 1;
+END LOOP;
+RETURN $1;
+END
+$$ LANGUAGE plpgsql;
+
+DROP AGGREGATE IF EXISTS count_products(integer[]);
+CREATE AGGREGATE count_products (integer[])
+(
+    stype = integer,
+    sfunc = cntprdcts
+);
+
+select count_products(array [product_code::int])
+from "Б20-703-2".products;
+
+select products_product_code from "Б20-703-2".products_list;
 
 END;
