@@ -303,21 +303,70 @@ insert into "Б20-703-2".products_list values
 (1114,734534,6000,nextval('"Б20-703-2"."seq5"')),
 (1115,110424,18000,nextval('"Б20-703-2"."seq5"'));
 
+-- select * from "Б20-703-2".product_categories;
+-- select * from "Б20-703-2".products;
+-- select * from "Б20-703-2".clients;
+-- select * from "Б20-703-2".orders;
+-- select * from "Б20-703-2".product_sizes;
+-- select * from "Б20-703-2".product_colors;
+-- select * from "Б20-703-2".images;
+-- select * from "Б20-703-2".product_categories_products;
+-- select * from "Б20-703-2".product_sizes_products;
+-- select * from "Б20-703-2".product_colors_products;
+-- select * from "Б20-703-2".products_list;
+
+--1 ЗАРАБОТАЛА БЛЯДИНА
+DROP TRIGGER IF EXISTS t1 ON "Б20-703-2".product_categories;
+
+CREATE TRIGGER t1
+
+    BEFORE INSERT ON "Б20-703-2".product_categories
+    FOR EACH ROW EXECUTE FUNCTION func1();
+
+CREATE OR REPLACE FUNCTION func1()
+    RETURNS TRIGGER AS $$
+    DECLARE
+        lvl int = 1;
+        -- lvl = 0 - корневая категория имеет уровень вложенности 0
+        -- lvl = 1 - корневая категория имеет уровень вложенности 1
+        a int = 0;
+        b int = 0;
+        BEGIN
+         a = new.pos_tree_id;
+         WHILE (a is not null) LOOP
+             b = (select pos_tree_id from "Б20-703-2".product_categories
+             where id = a);
+             a = b;
+             lvl = lvl + 1;
+             END LOOP;
+        IF (lvl > 3) THEN
+            RAISE EXCEPTION 'Уровень вложенности % > 3 запрещён', lvl;
+        END IF;
+        RETURN new;
+END;
+$$
+    LANGUAGE plpgsql;
+
+insert into "Б20-703-2".product_categories values
+('Мужская одежда летняя',3,nextval('"Б20-703-2"."seq1"'),1);
+
+insert into "Б20-703-2".product_categories values
+('Мужская одежда летняя верхняя',6,nextval('"Б20-703-2"."seq1"'),1);
+
+
+
+insert into "Б20-703-2".product_categories values
+('Мужская одежда летняя верхняя еще одна',7,nextval('"Б20-703-2"."seq1"'),1);
+
+insert into "Б20-703-2".product_categories values
+('Мужская одежда летняя веdfgdfgрхняя еще одна',8,nextval('"Б20-703-2"."seq1"'),1);
+
+
+
 select * from "Б20-703-2".product_categories;
-select * from "Б20-703-2".products;
-select * from "Б20-703-2".clients;
-select * from "Б20-703-2".orders;
-select * from "Б20-703-2".product_sizes;
-select * from "Б20-703-2".product_colors;
-select * from "Б20-703-2".images;
-select * from "Б20-703-2".product_categories_products;
-select * from "Б20-703-2".product_sizes_products;
-select * from "Б20-703-2".product_colors_products;
-select * from "Б20-703-2".products_list;
 
---1
 
---2 /* Вроде работает */
+--2 Вроде работает
 CREATE OR REPLACE FUNCTION f1(a text)
     RETURNS int AS $$
     DECLARE sum int = 0;
@@ -325,14 +374,13 @@ CREATE OR REPLACE FUNCTION f1(a text)
         sum = (select sum(total_cost) from "Б20-703-2".orders o
         where o.order_number in (select p.orders_order_number
         from "Б20-703-2".products_list p
-        where p.products_product_code = '733454'));
+        where p.products_product_code = a));
     RETURN sum;
 END
 $$
     LANGUAGE plpgsql;
 
-END;
-
 select f1('733454');
 
 
+END;
