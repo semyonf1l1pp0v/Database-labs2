@@ -303,17 +303,17 @@ insert into "Б20-703-2".products_list values
 (1114,734534,6000,nextval('"Б20-703-2"."seq5"')),
 (1115,110424,18000,nextval('"Б20-703-2"."seq5"'));
 
--- select * from "Б20-703-2".product_categories;
--- select * from "Б20-703-2".products;
--- select * from "Б20-703-2".clients;
--- select * from "Б20-703-2".orders;
--- select * from "Б20-703-2".product_sizes;
--- select * from "Б20-703-2".product_colors;
--- select * from "Б20-703-2".images;
--- select * from "Б20-703-2".product_categories_products;
--- select * from "Б20-703-2".product_sizes_products;
--- select * from "Б20-703-2".product_colors_products;
--- select * from "Б20-703-2".products_list;
+select * from "Б20-703-2".product_categories;
+select * from "Б20-703-2".products;
+select * from "Б20-703-2".clients;
+select * from "Б20-703-2".orders;
+select * from "Б20-703-2".product_sizes;
+select * from "Б20-703-2".product_colors;
+select * from "Б20-703-2".images;
+select * from "Б20-703-2".product_categories_products;
+select * from "Б20-703-2".product_sizes_products;
+select * from "Б20-703-2".product_colors_products;
+select * from "Б20-703-2".products_list;
 
 --1 ЗАРАБОТАЛА БЛЯДИНА
 DROP TRIGGER IF EXISTS t1 ON "Б20-703-2".product_categories;
@@ -350,18 +350,8 @@ $$
 insert into "Б20-703-2".product_categories values
 ('Мужская одежда летняя',3,nextval('"Б20-703-2"."seq1"'),1);
 
-insert into "Б20-703-2".product_categories values
-('Мужская одежда летняя верхняя',6,nextval('"Б20-703-2"."seq1"'),1);
-
-
-
-insert into "Б20-703-2".product_categories values
-('Мужская одежда летняя верхняя еще одна',7,nextval('"Б20-703-2"."seq1"'),1);
-
-insert into "Б20-703-2".product_categories values
-('Мужская одежда летняя веdfgdfgрхняя еще одна',8,nextval('"Б20-703-2"."seq1"'),1);
-
-
+-- insert into "Б20-703-2".product_categories values
+-- ('Мужская одежда летняя верхняя',6,nextval('"Б20-703-2"."seq1"'),1);
 
 select * from "Б20-703-2".product_categories;
 
@@ -381,6 +371,7 @@ $$
     LANGUAGE plpgsql;
 
 select f1('733454');
+select * from "Б20-703-2".products_list;
 
 --3
 DROP FUNCTION IF EXISTS cntprdcts(text, text);
@@ -418,5 +409,36 @@ select count_products(array [product_code::int])
 from "Б20-703-2".products;
 
 select products_product_code from "Б20-703-2".products_list;
+
+--4
+DROP VIEW IF EXISTS products_view;
+
+CREATE VIEW products_view AS
+    select p.name, p.product_code, p.count_storage from "Б20-703-2".products p;
+
+select * from products_view;
+
+DROP FUNCTION IF EXISTS update_products();
+
+CREATE OR REPLACE FUNCTION update_products() RETURNS TRIGGER AS $$
+    BEGIN
+        update "Б20-703-2".products set count_storage = NEW.count_storage
+        where product_code = OLD.product_code;
+        RETURN NEW;
+    END;
+$$ language plpgsql;
+
+DROP TRIGGER IF EXISTS update_products_view on products_view;
+
+CREATE TRIGGER update_products_view
+    INSTEAD OF UPDATE ON products_view
+    FOR EACH ROW EXECUTE FUNCTION update_products();
+
+update products_view set count_storage = 10000 where product_code = '110423';
+
+select * from products_view;
+
+select * from "Б20-703-2".products;
+
 
 END;
