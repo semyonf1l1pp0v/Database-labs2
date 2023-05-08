@@ -303,17 +303,17 @@ insert into "Б20-703-2".products_list values
 (1114,734534,6000,nextval('"Б20-703-2"."seq5"')),
 (1115,110424,18000,nextval('"Б20-703-2"."seq5"'));
 
-select * from "Б20-703-2".product_categories;
-select * from "Б20-703-2".products;
-select * from "Б20-703-2".clients;
-select * from "Б20-703-2".orders;
-select * from "Б20-703-2".product_sizes;
-select * from "Б20-703-2".product_colors;
-select * from "Б20-703-2".images;
-select * from "Б20-703-2".product_categories_products;
-select * from "Б20-703-2".product_sizes_products;
-select * from "Б20-703-2".product_colors_products;
-select * from "Б20-703-2".products_list;
+-- select * from "Б20-703-2".product_categories;
+-- select * from "Б20-703-2".products;
+-- select * from "Б20-703-2".clients;
+-- select * from "Б20-703-2".orders;
+-- select * from "Б20-703-2".product_sizes;
+-- select * from "Б20-703-2".product_colors;
+-- select * from "Б20-703-2".images;
+-- select * from "Б20-703-2".product_categories_products;
+-- select * from "Б20-703-2".product_sizes_products;
+-- select * from "Б20-703-2".product_colors_products;
+-- select * from "Б20-703-2".products_list;
 
 --1 ЗАРАБОТАЛА БЛЯДИНА
 DROP TRIGGER IF EXISTS t1 ON "Б20-703-2".product_categories;
@@ -440,5 +440,71 @@ select * from products_view;
 
 select * from "Б20-703-2".products;
 
+--5
+DROP FUNCTION IF EXISTS init();
+CREATE OR REPLACE FUNCTION init() RETURNS text AS $$
+    BEGIN
+        DROP TABLE IF EXISTS "Б20-703-2".queue;
+        CREATE TABLE "Б20-703-2".queue(id serial primary key, data varchar(64) not null);
+        RETURN 'Queue was successfully created';
+    END;
+$$ language plpgsql;
+
+CREATE OR REPLACE FUNCTION empty() RETURNS VOID AS $$
+    BEGIN
+        delete from "Б20-703-2".queue;
+    END;
+$$ language plpgsql;
+
+CREATE OR REPLACE FUNCTION enqueue(newdata varchar(64)) RETURNS VOID AS $$
+    BEGIN
+        insert into "Б20-703-2".queue (data) VALUES (newdata);
+    END;
+$$ language plpgsql;
+
+CREATE OR REPLACE FUNCTION dequeue() RETURNS VOID AS $$
+    BEGIN
+        delete from "Б20-703-2".queue q where q.id
+        = (select id from "Б20-703-2".queue order by id limit 1);
+    END;
+$$ language plpgsql;
+
+DROP FUNCTION IF EXISTS top();
+CREATE OR REPLACE FUNCTION top() RETURNS varchar(64) AS $$
+    BEGIN
+        RETURN (select data from "Б20-703-2".queue q where q.id
+        = (select id from "Б20-703-2".queue order by id limit 1));
+    END;
+$$ language plpgsql;
+
+DROP FUNCTION IF EXISTS tail();
+CREATE OR REPLACE FUNCTION tail() RETURNS varchar(64) AS $$
+    BEGIN
+        RETURN (select data from "Б20-703-2".queue q where q.id
+        = (select id from "Б20-703-2".queue order by id desc limit 1));
+    END;
+$$ language plpgsql;
+
+-- EXTRA: to see the whole queue
+DROP FUNCTION IF EXISTS seequeue();
+CREATE OR REPLACE FUNCTION seequeue() RETURNS SETOF varchar(64) AS $$
+    BEGIN
+        RETURN QUERY (select data from "Б20-703-2".queue);
+    END;
+$$ language plpgsql;
+
+--tests
+select init();
+select enqueue('Cat');
+select enqueue('Dog');
+select enqueue('Fox');
+select enqueue('Bear');
+select dequeue();
+
+select top();
+select tail();
+select seequeue();
+
+select empty();
 
 END;
