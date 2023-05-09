@@ -12,11 +12,11 @@ drop table if exists "Б20-703-2".product_sizes_products cascade;
 drop table if exists "Б20-703-2".product_colors_products cascade;
 drop table if exists "Б20-703-2".product_categories_products cascade;
 
-drop sequence "Б20-703-2"."seq1" cascade;
-drop sequence "Б20-703-2"."seq2" cascade;
-drop sequence "Б20-703-2"."seq3" cascade;
-drop sequence "Б20-703-2"."seq4" cascade;
-drop sequence "Б20-703-2"."seq5" cascade;
+drop sequence if exists "Б20-703-2"."seq1" cascade;
+drop sequence if exists "Б20-703-2"."seq2" cascade;
+drop sequence if exists "Б20-703-2"."seq3" cascade;
+drop sequence if exists "Б20-703-2"."seq4" cascade;
+drop sequence if exists "Б20-703-2"."seq5" cascade;
 
 CREATE TABLE IF NOT EXISTS "Б20-703-2".product_categories
 (
@@ -122,7 +122,7 @@ CREATE TABLE IF NOT EXISTS "Б20-703-2".products_list
 
 ALTER TABLE IF EXISTS "Б20-703-2".product_categories
     ADD FOREIGN KEY (pos_tree_id)
-    REFERENCES "Б20-703-2".product_categories (id) MATCH SIMPLE 
+    REFERENCES "Б20-703-2".product_categories (id) MATCH SIMPLE
     ON UPDATE NO ACTION
     ON DELETE SET NULL
     NOT VALID;
@@ -213,8 +213,9 @@ insert into "Б20-703-2".product_categories values
 ('Женское',null,nextval('"Б20-703-2"."seq1"'),2),
 ('Мужская одежда',1,nextval('"Б20-703-2"."seq1"'),1),
 ('Мужская обувь',1,nextval('"Б20-703-2"."seq1"'),2),
-('Мужские аксессуары',1,nextval('"Б20-703-2"."seq1"'),3);
-	
+('Мужские аксессуары',1,nextval('"Б20-703-2"."seq1"'),3),
+('Мужская одежда летняя',3,nextval('"Б20-703-2"."seq1"'),1);
+
 insert into "Б20-703-2".products values
 ('Пальто','Весеннее пальто','Весеннее пальто черное',10000,9000,10,110423,1),
 ('Футболка','Футболка серая','Футболка серая женская',9000,8500,8,110424,1),
@@ -268,10 +269,11 @@ insert into "Б20-703-2".images values
 (nextval('"Б20-703-2"."seq4"'),643224);
 
 insert into "Б20-703-2".product_categories_products values
-('Мужская одежда','Пальто'),
+--('Мужская одежда','Пальто'),
+('Мужская одежда летняя','Пальто'),
 ('Женское','Футболка'),
 ('Женское','Кофта'),
-('Мужская одежда','Джинсы'),
+--('Мужская одежда','Джинсы'),
 ('Мужская обувь','Туфли'),
 ('Женское','Сарафан ситцевый'),
 ('Женское','Сарафан джинсовый'),
@@ -339,34 +341,25 @@ from "Б20-703-2".products_list l, "Б20-703-2".products p
 where l.products_product_code = p.product_code order by
 count_of_goods desc limit 1);
 
---3 TODO
-/*удаляем категорию, если она родитель и пуста (в ней нет товаров)*/
-delete from "Б20-703-2".product_categories d where 
-(d.pos_tree_id is NULL and (select count (*) from 
-(select * from "Б20-703-2".product_categories_products f
-where f.product_categories_name = d.name) as aa) = 0) 
+--3 
 
-or 												
-/*или
-если у нее есть пустая категория-потомок*/
+--                                                                                          ПО ШАГАМ:
+delete from "Б20-703-2".product_categories d where id in                                        -- 5) эти категории будут удалены из таблицы категорий
+(select id from
+((select name, id from "Б20-703-2".product_categories a where a.pos_tree_id is null)            -- 1) выбираю родительскую категорию)
+union                                                                                           -- 2) объединяю её с её потомками первого уровня
+(select a.name, a.id from "Б20-703-2".product_categories a join
+    "Б20-703-2".product_categories b on a.pos_tree_id = b.id where b.pos_tree_id is null)) aa    -- 3) эта объединенная таблица носит имя аа
+where aa.name not in (select product_categories_name from "Б20-703-2".product_categories_products)); -- 4) выбираю те категории таблицы аа, которые пусты
+                                                                                                    -- (их названий нет в таблице product_categories_products)
 
-(d.id = /*выбираем id родителя*/
-(select pos_tree_id from "Б20-703-2".product_categories f
-where (f.pos_tree_id is not NULL and 
-f.id in (select id from													  
-(with t1 as
- 
-(select a.id, a.name, a.pos_tree_id from "Б20-703-2".product_categories a join 
-"Б20-703-2".product_categories b on a.pos_tree_id = b.id) /*выбрали категории-потомки*/
- 
-select * from t1 where 
-(select count (*) from (select * from "Б20-703-2".product_categories_products f
-where f.product_categories_name = t1.name) as k) = 0) /*которые пусты*/ as bb))));
+select * from "Б20-703-2".product_categories;
+select * from "Б20-703-2".product_categories_products;
 
 --4
 insert into "Б20-703-2".product_colors_products
 select color_name, product_code from "Б20-703-2".product_colors, "Б20-703-2".products l
-where id = 6 and l.name ~ '^Сарафан' AND
+where color_name = 'желтый' and l.name ~ '^Сарафан' AND
 'желтый' not in (select product_colors_color_name from
 	"Б20-703-2".product_colors_products k where k.products_product_code in 
 	(select product_code from "Б20-703-2".products l
